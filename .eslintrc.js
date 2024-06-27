@@ -25,6 +25,7 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',"max-len": ["error", { code: 120 }],
     '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-unused-vars': ['warn'],
     '@typescript-eslint/return-await': ['error', 'always'],
     "simple-import-sort/imports": "error",
     "import/first": "error",
