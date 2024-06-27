@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mini-autoRia-postgres:
+    image: postgres:16.1
+    ports:
+      - '${POSTGRES_PORT:-5433}:5432'
+    environment:
+      POSTGRES_USER: '${POSTGRES_USER:-user}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:-password}'
+      POSTGRES_DB: '${POSTGRES_DB:-mini-autoRia}'
+    volumes:
+      - ./mini-autoRia-api-db:/var/lib/postgresql/mini-autoRia
+
+  mini-autoRia-s3:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    ports:
+      - "8000:9000"
+      - "8001:9001"
+    volumes:
+      - ./mini-autoRia-api-s3-data:/usr/src/app/s3
+    environment:
+      MINIO_ROOT_USER: '${AWS_S3_ACCESS_KEY:-user}'
+      MINIO_ROOT_PASSWORD: '${AWS_S3_SECRET_KEY:-password}'
+
+volumes:
+  mini-autoRia-api-db:
+  mini-autoRia-api-s3:
