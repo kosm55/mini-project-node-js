@@ -6,8 +6,11 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+import { LoggerService } from '../../modules/logger/logger.service';
+
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  constructor(private readonly logger: LoggerService) {}
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -23,6 +26,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = 500;
       messages = 'Internal server error';
     }
+    this.logger.error(exception);
 
     messages = Array.isArray(messages) ? messages : [messages];
 

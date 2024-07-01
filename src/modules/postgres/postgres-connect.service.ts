@@ -1,9 +1,9 @@
 import * as path from 'node:path';
+import * as process from 'node:process';
 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
-import * as process from 'process';
 
 import { Config, DatabaseConfig } from '../../configs/configs.type';
 
@@ -40,7 +40,7 @@ export class PostgresConnectService implements TypeOrmOptionsFactory {
           '*.js',
         ),
       ],
-      synchronize: false,
+      synchronize: true, //mb need false
       migrationsRun: true,
     };
   }

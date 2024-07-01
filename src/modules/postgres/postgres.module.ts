@@ -6,6 +6,7 @@ import { PostgresConnectService } from './postgres-connect.service';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
+      imports: [],
       useClass: PostgresConnectService,
     }),
   ],
