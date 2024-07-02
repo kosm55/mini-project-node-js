@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany, UpdateDateColumn } from 'typeorm';
 
+import { AccountTypeEnum } from '../../modules/auth/enums/account-type.enum';
 import { RoleEnum } from '../../modules/auth/enums/role.enum';
 import { CarPostEntity } from './car-post.entity';
 import { TableNameEnum } from './enums/table-name.enum';
@@ -22,6 +23,13 @@ export class UserEntity extends BaseModel {
 
   @Column({ type: 'enum', enum: RoleEnum, default: RoleEnum.CUSTOMER })
   role: RoleEnum;
+
+  @Column({
+    type: 'enum',
+    enum: AccountTypeEnum,
+    default: AccountTypeEnum.BASE,
+  })
+  accountType: AccountTypeEnum;
 
   @OneToMany(() => TokensEntity, (entity) => entity.user)
   tokens?: TokensEntity[];

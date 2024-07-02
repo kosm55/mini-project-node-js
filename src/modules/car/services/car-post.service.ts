@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -6,6 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { CarPostEntity } from '../../../database/entities/car-post.entity';
+import { AccountTypeEnum } from '../../auth/enums/account-type.enum';
 import { IUserData } from '../../auth/interfases/user-data.interface';
 import { CarBrandRepository } from '../../repository/services/car-brand.repository';
 import { CarModelRepository } from '../../repository/services/car-model.repository';
@@ -35,6 +37,9 @@ export class CarPostService {
     private readonly regionRepository: RegionRepository,
   ) {}
 
+  //дописати на створення і онвлення ісАктів на валідацію нецензурних слів, все інше ок
+
+  //все гуд
   public async getList(
     userData: IUserData,
     query: CarPostListReqDto,
@@ -46,10 +51,19 @@ export class CarPostService {
     return CarPostMapper.toListResponseDTO(entities, total, query);
   }
 
+  // все гуд, респонс юзер null це ок,  бо тут не публікується список ,
+  // а просто вертається юзеру його оголошення , хоча все ж може коректно було б додати юзера ,
+  // якщо буде час,  як продавець бачить своє повідомлення з інфою про себе
   public async create(
     userData: IUserData,
     dto: CreateCarPotsReqDto,
   ): Promise<CarPostResDto> {
+    const list = await this.ListCarPostByUserId(userData.userId);
+    if (list.length > 0 && userData.accountType === AccountTypeEnum.BASE) {
+      throw new ConflictException(
+        'user with BASE account can create only one post',
+      );
+    }
     const carPost = await this.carPostRepository.save(
       this.carPostRepository.create({
         ...dto,
@@ -59,6 +73,7 @@ export class CarPostService {
     return CarPostMapper.toResponseDTO(carPost);
   }
 
+  // все гуд
   public async getById(
     userData: IUserData,
     carPostId: string,
@@ -73,16 +88,24 @@ export class CarPostService {
     return CarPostMapper.toResponseDTO(carPost);
   }
 
+  //все гуд
   public async updateById(
     userData: IUserData,
     carPostId: string,
     dto: UpdateCarPotsReqDto,
   ): Promise<CarPostResDto> {
-    const article = await this.findMyCarPostByIdOrThrow(
+    // console.log(dto);
+    // console.log(dto.brand_id, dto.model_id, dto.region_id); //хз чого червоне,юачить його,
+    await this.IsExistBrandModelRegionOrThrow(
+      dto.brand_id,
+      dto.model_id,
+      dto.region_id,
+    );
+    const carPost = await this.findMyCarPostByIdOrThrow(
       userData.userId,
       carPostId,
     );
-    await this.carPostRepository.save({ ...article, ...dto });
+    await this.carPostRepository.save({ ...carPost, ...dto });
     const updatedCarPost = await this.carPostRepository.findCarPostById(
       userData,
       carPostId,
@@ -90,6 +113,7 @@ export class CarPostService {
     return CarPostMapper.toResponseDTO(updatedCarPost);
   }
 
+  // все гуд
   public async deleteById(
     userData: IUserData,
     carPostId: string,
@@ -101,16 +125,71 @@ export class CarPostService {
     await this.carPostRepository.remove(carPost);
   }
 
+  // все гуд
+  public async info(dto: any): Promise<any> {
+    return 'some info';
+  }
+
+  // все гуд
+  public async createBrand(dto: CreateCarBrandReqDto): Promise<CarBrandResDto> {
+    const brand = await this.carBrandRepository.findOne({
+      where: { brand_name: dto.brand_name },
+    });
+    if (brand) {
+      throw new ConflictException('brand already exist');
+    }
+    const newBrand = this.carBrandRepository.create(dto);
+    await this.carBrandRepository.save(newBrand);
+    return CarPostMapper.toResponseBrandDTO(newBrand);
+  }
+
+  // все гуд
+  public async getAllBrands(): Promise<CarBrandResDto[]> {
+    return await this.carBrandRepository.find();
+  }
+
+  // все гуд
+  public async createModel(dto: CreateCarModelReqDto): Promise<CarModelResDto> {
+    const model = await this.carModelRepository.findOne({
+      where: { model_name: dto.model_name },
+    });
+    if (model) {
+      throw new ConflictException('model already exist');
+    }
+    const newModel = this.carModelRepository.create(dto);
+    await this.carModelRepository.save(newModel);
+    return CarPostMapper.toResponseModelDTO(newModel);
+  }
+
+  // все гуд
+  public async getAllModel(): Promise<CarModelResDto[]> {
+    return await this.carModelRepository.find();
+  }
+
+  // все гуд
+  public async createRegion(dto: CreateRegionReqDto): Promise<RegionResDto> {
+    const region = await this.regionRepository.findOne({
+      where: { region_name: dto.region_name },
+    });
+    if (region) {
+      throw new ConflictException('region already exist');
+    }
+    const newRegion = this.regionRepository.create(dto);
+    await this.regionRepository.save(newRegion);
+    return CarPostMapper.toResponseRegionDTO(newRegion);
+  }
+
+  // все гуд
+  public async getAllRegion(): Promise<RegionResDto[]> {
+    return await this.regionRepository.find();
+  }
+
+  // все гуд
   public async findMyCarPostByIdOrThrow(
     userId: string,
     carPostId: string,
   ): Promise<CarPostEntity> {
-    const carPost = await this.carPostRepository.findOneBy({
-      id: carPostId,
-    });
-    if (!carPost) {
-      throw new NotFoundException('Car post not found');
-    }
+    const carPost = await this.findCarPostByIdOrThrow(carPostId);
     if (carPost.user_id !== userId) {
       throw new ForbiddenException();
     }
@@ -127,51 +206,37 @@ export class CarPostService {
     return carPost;
   }
 
-  public async createBrand(dto: CreateCarBrandReqDto): Promise<CarBrandResDto> {
+  private async ListCarPostByUserId(userId: string): Promise<CarPostEntity[]> {
+    return await this.carPostRepository.find({
+      where: { user_id: userId },
+    });
+  }
+
+  // все гуд
+  private async IsExistBrandModelRegionOrThrow(
+    brand_id: string,
+    model_id: string,
+    region_id: string,
+  ): Promise<void> {
     const brand = await this.carBrandRepository.findOne({
-      where: { brand_name: dto.brand_name },
+      where: { id: brand_id },
     });
-    if (brand) {
-      throw new ConflictException('brand already exist');
+    if (!brand) {
+      throw new BadRequestException('invalid brand_id');
     }
-    const newBrand = this.carBrandRepository.create(dto);
-    await this.carBrandRepository.save(newBrand);
-    return CarPostMapper.toResponseBrandDTO(newBrand);
-  }
 
-  public async getAllBrands(): Promise<CarBrandResDto[]> {
-    return await this.carBrandRepository.find();
-  }
-
-  public async createModel(dto: CreateCarModelReqDto): Promise<CarModelResDto> {
     const model = await this.carModelRepository.findOne({
-      where: { model_name: dto.model_name },
+      where: { id: model_id },
     });
-    if (model) {
-      throw new ConflictException('model already exist');
+    if (!model) {
+      throw new BadRequestException('invalid model_id');
     }
-    const newModel = this.carModelRepository.create(dto);
-    await this.carModelRepository.save(newModel);
-    return CarPostMapper.toResponseModelDTO(newModel);
-  }
 
-  public async getAllModel(): Promise<CarModelResDto[]> {
-    return await this.carModelRepository.find();
-  }
-
-  public async createRegion(dto: CreateRegionReqDto): Promise<RegionResDto> {
     const region = await this.regionRepository.findOne({
-      where: { region_name: dto.region_name },
+      where: { id: region_id },
     });
-    if (region) {
-      throw new ConflictException('region already exist');
+    if (!region) {
+      throw new BadRequestException('invalid region_id');
     }
-    const newRegion = this.regionRepository.create(dto);
-    await this.regionRepository.save(newRegion);
-    return CarPostMapper.toResponseRegionDTO(newRegion);
-  }
-
-  public async getAllRegion(): Promise<RegionResDto[]> {
-    return await this.regionRepository.find();
   }
 }

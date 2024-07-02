@@ -1,3 +1,4 @@
+import { AccountTypeEnum } from '../enums/account-type.enum';
 import { RoleEnum } from '../enums/role.enum';
 
 export interface IUserData {
@@ -5,4 +6,5 @@ export interface IUserData {
   email: string;
   deviceId: string;
   role: RoleEnum;
+  accountType: AccountTypeEnum;
 }

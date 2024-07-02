@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { AccountTypeEnum } from '../../auth/enums/account-type.enum';
 import { IUserData } from '../../auth/interfases/user-data.interface';
 import { TokensRepository } from '../../repository/services/tokens.repository';
 import { UserRepository } from '../../repository/services/user.repository';
@@ -49,5 +50,14 @@ export class UserService {
     if (user) {
       throw new ConflictException('email is already taken');
     }
+  }
+
+  public async changeAccountType(userId: string): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('user not found');
+    }
+    user.accountType = AccountTypeEnum.PREMIUM;
+    await this.userRepository.save(user);
   }
 }

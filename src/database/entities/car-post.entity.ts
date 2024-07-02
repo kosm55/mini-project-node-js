@@ -50,4 +50,7 @@ export class CarPostEntity extends BaseModel {
 
   @UpdateDateColumn()
   update: Date;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
 }

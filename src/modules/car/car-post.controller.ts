@@ -14,6 +14,7 @@ import {
   ApiBearerAuth,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -44,35 +45,40 @@ export class CarPostController {
 
   @SkipAuth()
   @Get('brand')
+  @ApiOperation({ summary: 'get list of brands' })
   public async getAllBrands(): Promise<CarBrandResDto[]> {
     return await this.carPostService.getAllBrands();
   }
 
   @ApiBearerAuth()
-  @Roles(RoleEnum.ADMIN)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
   @UseGuards(RolesGuard)
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @Post('brand')
+  @ApiOperation({ summary: 'add new brand (only for admin, manager)' })
   public async createBrand(
     @Body() dto: CreateCarBrandReqDto,
   ): Promise<CarBrandResDto> {
     return await this.carPostService.createBrand(dto);
   }
+
   @SkipAuth()
   @Get('model')
+  @ApiOperation({ summary: 'get list of models' })
   public async getAllModel(): Promise<CarModelResDto[]> {
     return await this.carPostService.getAllModel();
   }
 
   @ApiBearerAuth()
-  @Roles(RoleEnum.ADMIN)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
   @UseGuards(RolesGuard)
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @Post('model')
+  @ApiOperation({ summary: 'add new model (only for admin, manager)' })
   public async createModel(
     @Body() dto: CreateCarModelReqDto,
   ): Promise<CarModelResDto> {
@@ -81,16 +87,18 @@ export class CarPostController {
 
   @SkipAuth()
   @Get('region')
+  @ApiOperation({ summary: 'get list of regions' })
   public async getAllRegion(): Promise<RegionResDto[]> {
     return await this.carPostService.getAllRegion();
   }
 
   @ApiBearerAuth()
-  @Roles(RoleEnum.ADMIN)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
   @UseGuards(RolesGuard)
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiOperation({ summary: 'add new region (only for admin, manager)' })
   @Post('region')
   public async createRegion(
     @Body() dto: CreateRegionReqDto,
@@ -98,13 +106,9 @@ export class CarPostController {
     return await this.carPostService.createRegion(dto);
   }
 
-  @ApiBearerAuth()
-  // @Roles(RoleEnum.CUSTOMER, RoleEnum.ADMIN)
-  // @UseGuards(RolesGuard)
-  @ApiForbiddenResponse({ description: 'Forbidden' })
-  @ApiNotFoundResponse({ description: 'Not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @SkipAuth()
   @Get()
+  @ApiOperation({ summary: 'get list of car posts' })
   public async getList(
     @CurrentUser() userData: IUserData,
     @Query() query: CarPostListReqDto,
@@ -113,12 +117,15 @@ export class CarPostController {
   }
 
   @ApiBearerAuth()
-  // @Roles(RoleEnum.CUSTOMER, RoleEnum.ADMIN)
-  // @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.SELLER)
+  @UseGuards(RolesGuard)
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @Post()
+  @ApiOperation({
+    summary: 'create new car post (only for admin, manager, seller)',
+  })
   public async create(
     @CurrentUser() userData: IUserData,
     @Body() dto: CreateCarPotsReqDto,
@@ -127,12 +134,11 @@ export class CarPostController {
   }
 
   @ApiBearerAuth()
-  // @Roles(RoleEnum.CUSTOMER, RoleEnum.ADMIN)
-  // @UseGuards(RolesGuard)
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @Get(':carPostId')
+  @ApiOperation({ summary: 'get car post ' })
   public async getById(
     @CurrentUser() userData: IUserData,
     @Param('carPostId', ParseUUIDPipe) carPostId: string,
@@ -141,32 +147,56 @@ export class CarPostController {
   }
 
   @ApiBearerAuth()
-  // @Roles(RoleEnum.CUSTOMER, RoleEnum.ADMIN)
-  // @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.SELLER)
+  @UseGuards(RolesGuard)
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   @Put(':carPostId')
+  @ApiOperation({
+    summary: 'update car pots (only for admin, manager, seller)',
+  })
   public async updateById(
     @CurrentUser() userData: IUserData,
-    @Param('articleId', ParseUUIDPipe) carPostId: string,
+    @Param('carPostId', ParseUUIDPipe) carPostId: string,
     @Body() dto: UpdateCarPotsReqDto,
   ): Promise<CarPostResDto> {
     return await this.carPostService.updateById(userData, carPostId, dto);
   }
 
   @ApiBearerAuth()
-  // @Roles(RoleEnum.CUSTOMER, RoleEnum.ADMIN)
-  // @UseGuards(RolesGuard)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.SELLER)
+  @UseGuards(RolesGuard)
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
   //@HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':carPostId')
+  @ApiOperation({
+    summary: 'delete car pots (only for admin, manager, seller)',
+  })
   public async deleteById(
     @CurrentUser() userData: IUserData,
     @Param('carPostId', ParseUUIDPipe) carPostId: string,
   ): Promise<void> {
     await this.carPostService.deleteById(userData, carPostId);
+  }
+
+  @ApiBearerAuth()
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.SELLER)
+  @UseGuards(RolesGuard)
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiNotFoundResponse({ description: 'Not Found' })
+  @Get('info')
+  @ApiOperation({
+    summary: 'update car pots (only for admin, manager, seller)',
+  })
+  public async info(
+    @CurrentUser() userData: IUserData,
+    @Param('carPostId', ParseUUIDPipe) carPostId: string,
+    @Body() dto: any,
+  ): Promise<any> {
+    return await this.carPostService.info(dto);
   }
 }

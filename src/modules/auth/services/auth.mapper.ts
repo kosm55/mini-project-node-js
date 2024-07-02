@@ -29,6 +29,7 @@ export class AuthMapper {
       email: user.email,
       deviceId,
       role: user.role,
+      accountType: user.accountType,
     };
   }
 }
