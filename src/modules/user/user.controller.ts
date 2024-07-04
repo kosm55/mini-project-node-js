@@ -60,13 +60,13 @@ export class UserController {
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @Put('')
+  @Put(':userId')
   @ApiOperation({ summary: 'Update some user (only for admin, manager)' })
   public async update(
-    @CurrentUser() userData: IUserData,
     @Body() updateUserDto: UpdateUserReqDto,
+    @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<UserResDto> {
-    return await this.userService.updateMe(userData, updateUserDto);
+    return await this.userService.update(updateUserDto, userId);
   }
   @ApiBearerAuth()
   @ApiNotFoundResponse({ description: 'Not found' })
@@ -74,17 +74,19 @@ export class UserController {
   @Delete('me')
   @ApiOperation({ summary: 'Delete me' })
   public async deleteMe(@CurrentUser() userData: IUserData): Promise<void> {
-    await this.userService.remove(userData);
+    await this.userService.removeMe(userData);
   }
   @ApiBearerAuth()
   @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
   @UseGuards(RolesGuard)
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  @Delete('')
+  @Delete(':userId')
   @ApiOperation({ summary: 'Delete some user (only for admin, manager)' })
-  public async delete(@CurrentUser() userData: IUserData): Promise<void> {
-    await this.userService.remove(userData);
+  public async delete(
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ): Promise<void> {
+    await this.userService.remove(userId);
   }
 
   @ApiBearerAuth()

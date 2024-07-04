@@ -29,12 +29,14 @@ import { CarPostListReqDto } from './dto/req/car-post-list.req.dto';
 import { CreateCarBrandReqDto } from './dto/req/create-car-brand.req.dto';
 import { CreateCarModelReqDto } from './dto/req/create-car-model.req.dto';
 import { CreateCarPotsReqDto } from './dto/req/create-car-pots.req.dto';
+import { CreateCurrencyReqDto } from './dto/req/create-currency.req.dto';
 import { CreateRegionReqDto } from './dto/req/create-region.req.dto';
 import { UpdateCarPotsReqDto } from './dto/req/update-car-pots.req.dto';
 import { CarBrandResDto } from './dto/res/car-brand.res.dto';
 import { CarModelResDto } from './dto/res/car-model.res.dto';
 import { CarPostResDto } from './dto/res/car-post.res.dto';
 import { CarPostListResDto } from './dto/res/car-post-list.res.dto';
+import { CurrencyResDto } from './dto/res/currency.res.dto';
 import { RegionResDto } from './dto/res/region.res.dto';
 import { CarPostService } from './services/car-post.service';
 
@@ -104,6 +106,27 @@ export class CarPostController {
     @Body() dto: CreateRegionReqDto,
   ): Promise<RegionResDto> {
     return await this.carPostService.createRegion(dto);
+  }
+
+  @SkipAuth()
+  @Get('currency')
+  @ApiOperation({ summary: 'get list of currencies' })
+  public async getAllCurrencies(): Promise<CurrencyResDto[]> {
+    return await this.carPostService.getAllCurrencies();
+  }
+
+  @ApiBearerAuth()
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
+  @UseGuards(RolesGuard)
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiOperation({ summary: 'add new currency (only for admin, manager)' })
+  @Post('currency')
+  public async createCurrency(
+    @Body() dto: CreateCurrencyReqDto,
+  ): Promise<CurrencyResDto> {
+    return await this.carPostService.createCurrency(dto);
   }
 
   @SkipAuth()
@@ -188,15 +211,14 @@ export class CarPostController {
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
-  @Get('info')
+  @Get('info/:carPostId')
   @ApiOperation({
-    summary: 'update car pots (only for admin, manager, seller)',
+    summary: 'info about post (only for admin, manager, seller)',
   })
   public async info(
     @CurrentUser() userData: IUserData,
     @Param('carPostId', ParseUUIDPipe) carPostId: string,
-    @Body() dto: any,
   ): Promise<any> {
-    return await this.carPostService.info(dto);
+    return await this.carPostService.info(carPostId, userData);
   }
 }

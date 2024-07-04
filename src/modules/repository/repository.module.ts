@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { CarBrandRepository } from './services/car-brand.repository';
 import { CarModelRepository } from './services/car-model.repository';
 import { CarPostRepository } from './services/car-post.repository';
+import { CurrencyRepository } from './services/currency.repository';
 import { RegionRepository } from './services/region.repository';
 import { TokensRepository } from './services/tokens.repository';
 import { UserRepository } from './services/user.repository';
@@ -14,6 +15,7 @@ const repositories = [
   CarPostRepository,
   CarBrandRepository,
   CarModelRepository,
+  CurrencyRepository,
 ];
 
 @Global()

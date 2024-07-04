@@ -9,23 +9,28 @@ import {
 import { CarPostEntity } from '../../../database/entities/car-post.entity';
 import { AccountTypeEnum } from '../../auth/enums/account-type.enum';
 import { IUserData } from '../../auth/interfases/user-data.interface';
+import { EmailService } from '../../email/email.service';
 import { CarBrandRepository } from '../../repository/services/car-brand.repository';
 import { CarModelRepository } from '../../repository/services/car-model.repository';
 import { CarPostRepository } from '../../repository/services/car-post.repository';
+import { CurrencyRepository } from '../../repository/services/currency.repository';
 import { RegionRepository } from '../../repository/services/region.repository';
 import { UserRepository } from '../../repository/services/user.repository';
 import { CarPostListReqDto } from '../dto/req/car-post-list.req.dto';
 import { CreateCarBrandReqDto } from '../dto/req/create-car-brand.req.dto';
 import { CreateCarModelReqDto } from '../dto/req/create-car-model.req.dto';
 import { CreateCarPotsReqDto } from '../dto/req/create-car-pots.req.dto';
+import { CreateCurrencyReqDto } from '../dto/req/create-currency.req.dto';
 import { CreateRegionReqDto } from '../dto/req/create-region.req.dto';
 import { UpdateCarPotsReqDto } from '../dto/req/update-car-pots.req.dto';
 import { CarBrandResDto } from '../dto/res/car-brand.res.dto';
 import { CarModelResDto } from '../dto/res/car-model.res.dto';
 import { CarPostResDto } from '../dto/res/car-post.res.dto';
 import { CarPostListResDto } from '../dto/res/car-post-list.res.dto';
+import { CurrencyResDto } from '../dto/res/currency.res.dto';
 import { RegionResDto } from '../dto/res/region.res.dto';
 import { CarPostMapper } from './car-post.mapper';
+import { ExchangeService } from './exchange.service';
 
 @Injectable()
 export class CarPostService {
@@ -35,11 +40,11 @@ export class CarPostService {
     private readonly carBrandRepository: CarBrandRepository,
     private readonly carModelRepository: CarModelRepository,
     private readonly regionRepository: RegionRepository,
+    private readonly exchangeService: ExchangeService,
+    private readonly currencyRepository: CurrencyRepository,
+    private readonly emailService: EmailService,
   ) {}
 
-  //дописати на створення і онвлення ісАктів на валідацію нецензурних слів, все інше ок
-
-  //все гуд
   public async getList(
     userData: IUserData,
     query: CarPostListReqDto,
@@ -51,9 +56,6 @@ export class CarPostService {
     return CarPostMapper.toListResponseDTO(entities, total, query);
   }
 
-  // все гуд, респонс юзер null це ок,  бо тут не публікується список ,
-  // а просто вертається юзеру його оголошення , хоча все ж може коректно було б додати юзера ,
-  // якщо буде час,  як продавець бачить своє повідомлення з інфою про себе
   public async create(
     userData: IUserData,
     dto: CreateCarPotsReqDto,
@@ -64,16 +66,62 @@ export class CarPostService {
         'user with BASE account can create only one post',
       );
     }
+
+    const checkBadWord = this.hasBadWord(dto.description);
+    if (checkBadWord) {
+      dto.isActive = false;
+      await this.emailService.sendEmailForManager();
+      throw new BadRequestException('bad word forbidden');
+    }
+
+    const usd = await this.currencyRepository.findOneBy({
+      currency_code: 'USD',
+    });
+    const eur = await this.currencyRepository.findOneBy({
+      currency_code: 'EUR',
+    });
+    const uah = await this.currencyRepository.findOneBy({
+      currency_code: 'UAH',
+    });
+
+    if (!usd || !eur || !uah) {
+      throw new NotFoundException('currency not found');
+    }
+
+    await this.exchangeService.updateExchangeRates();
+    const rates = this.exchangeService.getExchangeRates();
+    let priceInUSD = 0;
+    let priceInEUR = 0;
+    let priceInUAH = 0;
+
+    if (dto.currency_id === usd.id) {
+      priceInUSD = dto.price;
+      priceInUAH = dto.price * rates.USD;
+      priceInEUR = priceInUAH / rates.EUR;
+    } else if (dto.currency_id === eur.id) {
+      priceInEUR = dto.price;
+      priceInUAH = dto.price * rates.EUR;
+      priceInUSD = priceInUAH / rates.USD;
+    } else if (dto.currency_id === uah.id) {
+      priceInUAH = dto.price;
+      priceInUSD = dto.price / rates.USD;
+      priceInEUR = dto.price / rates.EUR;
+    }
     const carPost = await this.carPostRepository.save(
       this.carPostRepository.create({
         ...dto,
         user_id: userData.userId,
+        exchangeUSD: rates.USD,
+        exchangeEUR: rates.EUR,
+        exchangeUAH: rates.UAH,
+        priceInUSD,
+        priceInUAH,
+        priceInEUR,
       }),
     );
     return CarPostMapper.toResponseDTO(carPost);
   }
 
-  // все гуд
   public async getById(
     userData: IUserData,
     carPostId: string,
@@ -85,17 +133,19 @@ export class CarPostService {
     if (!carPost) {
       throw new NotFoundException('car post  not found');
     }
+    if (carPost.user.accountType === AccountTypeEnum.PREMIUM) {
+      // тут сервіс інфо по айді посту міняю каунт на +1,  треба ще інфо зробити ентіті
+      // це будуть к-сть переглядів для преміум- createdAt- обовязково , бо там за період -тиждень рік місяць
+      // або просто додати  поле каунт і там плюсувати
+    }
     return CarPostMapper.toResponseDTO(carPost);
   }
 
-  //все гуд
   public async updateById(
     userData: IUserData,
     carPostId: string,
     dto: UpdateCarPotsReqDto,
   ): Promise<CarPostResDto> {
-    // console.log(dto);
-    // console.log(dto.brand_id, dto.model_id, dto.region_id); //хз чого червоне,юачить його,
     await this.IsExistBrandModelRegionOrThrow(
       dto.brand_id,
       dto.model_id,
@@ -105,6 +155,13 @@ export class CarPostService {
       userData.userId,
       carPostId,
     );
+    const checkBadWord = this.hasBadWord(dto.description);
+    if (checkBadWord) {
+      dto.isActive = false;
+      await this.emailService.sendEmailForManager();
+      throw new BadRequestException('bad word forbidden');
+    }
+
     await this.carPostRepository.save({ ...carPost, ...dto });
     const updatedCarPost = await this.carPostRepository.findCarPostById(
       userData,
@@ -113,7 +170,6 @@ export class CarPostService {
     return CarPostMapper.toResponseDTO(updatedCarPost);
   }
 
-  // все гуд
   public async deleteById(
     userData: IUserData,
     carPostId: string,
@@ -125,12 +181,19 @@ export class CarPostService {
     await this.carPostRepository.remove(carPost);
   }
 
-  // все гуд
-  public async info(dto: any): Promise<any> {
-    return 'some info';
+  public async info(carPostId: string, userData: IUserData): Promise<any> {
+    if (userData.accountType !== AccountTypeEnum.PREMIUM) {
+      throw new ForbiddenException(' only PREMIUM');
+    }
+    // переглдяи- беру каунт з посту- гед по айді , якщо айді не юзера-ме,  статистика з created
+    // середня ціна -  знайти всі у кого модель і марка такаж, дістати всі ціни у цьому діапахоні - це буде масив ,
+    // і проітерувати ,  для кожного sum =0 , for of sum =sum +item . count =+1
+    // і середня = сум на каунт - це для україни
+    // те саме для регіуону , даю у таблицю ще регіон і те саме рахую
+
+    return 'some info views, price';
   }
 
-  // все гуд
   public async createBrand(dto: CreateCarBrandReqDto): Promise<CarBrandResDto> {
     const brand = await this.carBrandRepository.findOne({
       where: { brand_name: dto.brand_name },
@@ -143,12 +206,10 @@ export class CarPostService {
     return CarPostMapper.toResponseBrandDTO(newBrand);
   }
 
-  // все гуд
   public async getAllBrands(): Promise<CarBrandResDto[]> {
     return await this.carBrandRepository.find();
   }
 
-  // все гуд
   public async createModel(dto: CreateCarModelReqDto): Promise<CarModelResDto> {
     const model = await this.carModelRepository.findOne({
       where: { model_name: dto.model_name },
@@ -161,12 +222,10 @@ export class CarPostService {
     return CarPostMapper.toResponseModelDTO(newModel);
   }
 
-  // все гуд
   public async getAllModel(): Promise<CarModelResDto[]> {
     return await this.carModelRepository.find();
   }
 
-  // все гуд
   public async createRegion(dto: CreateRegionReqDto): Promise<RegionResDto> {
     const region = await this.regionRepository.findOne({
       where: { region_name: dto.region_name },
@@ -178,13 +237,27 @@ export class CarPostService {
     await this.regionRepository.save(newRegion);
     return CarPostMapper.toResponseRegionDTO(newRegion);
   }
-
-  // все гуд
   public async getAllRegion(): Promise<RegionResDto[]> {
     return await this.regionRepository.find();
   }
 
-  // все гуд
+  public async createCurrency(
+    dto: CreateCurrencyReqDto,
+  ): Promise<CurrencyResDto> {
+    const currency = await this.currencyRepository.findOne({
+      where: { currency_code: dto.currency_code },
+    });
+    if (currency) {
+      throw new ConflictException('currency already exist');
+    }
+    const newCurrency = this.currencyRepository.create(dto);
+    await this.currencyRepository.save(newCurrency);
+    return CarPostMapper.toResponseCurrencyDTO(newCurrency);
+  }
+  public async getAllCurrencies(): Promise<CurrencyResDto[]> {
+    return await this.currencyRepository.find();
+  }
+
   public async findMyCarPostByIdOrThrow(
     userId: string,
     carPostId: string,
@@ -212,7 +285,6 @@ export class CarPostService {
     });
   }
 
-  // все гуд
   private async IsExistBrandModelRegionOrThrow(
     brand_id: string,
     model_id: string,
@@ -238,5 +310,11 @@ export class CarPostService {
     if (!region) {
       throw new BadRequestException('invalid region_id');
     }
+  }
+  private hasBadWord(description: string): boolean {
+    const badWord = ['bad1', 'bad2', 'bad3'];
+
+    const findBadWord = badWord.map((word) => description.includes(word));
+    return findBadWord.includes(true);
   }
 }

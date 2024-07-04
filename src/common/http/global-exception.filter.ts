@@ -20,8 +20,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let messages: string | string[];
 
     if (exception instanceof HttpException) {
-      messages = (exception as HttpException).message;
+      // messages = (exception as HttpException).message;
+      // status = exception.getStatus();
+
       status = exception.getStatus();
+      const responseBody = exception.getResponse();
+
+      if (typeof responseBody === 'string') {
+        messages = responseBody;
+      } else if (typeof responseBody === 'object' && responseBody !== null) {
+        messages = (responseBody as any).message || 'Unknown error';
+      }
     } else {
       status = 500;
       messages = 'Internal server error';

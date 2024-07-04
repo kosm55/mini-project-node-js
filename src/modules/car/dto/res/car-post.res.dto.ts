@@ -9,24 +9,6 @@ export class CarPostResDto {
   })
   id: string;
 
-  // @ApiProperty({
-  //   example: 'bmw',
-  //   description: 'brand name',
-  // })
-  // brand_name: string;
-  //
-  // @ApiProperty({
-  //   example: 'bmw',
-  //   description: 'brand name',
-  // })
-  // model_name: string;
-  //
-  // @ApiProperty({
-  //   example: 'bmw',
-  //   description: 'brand name',
-  // })
-  // region_name: string;
-
   @ApiProperty({
     example: '796cea24-a328-4463-a5e1-85a779e4780f',
     description: 'brand ID',
@@ -55,7 +37,37 @@ export class CarPostResDto {
     example: 65000,
     description: 'Car price',
   })
-  price: number;
+  priceInUSD: number;
+
+  @ApiProperty({
+    example: 65000,
+    description: 'Car price',
+  })
+  priceInUAH: number;
+
+  @ApiProperty({
+    example: 65000,
+    description: 'Car price',
+  })
+  priceInEUR: number;
+
+  @ApiProperty({
+    example: 40,
+    description: 'rate exchange usd',
+  })
+  exchangeUSD: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'rate exchange uah',
+  })
+  exchangeUAH: number;
+
+  @ApiProperty({
+    example: 42,
+    description: 'rate exchange eur',
+  })
+  exchangeEUR: number;
 
   @ApiProperty({
     example: 'Car Post Description',

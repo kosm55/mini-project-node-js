@@ -8,6 +8,7 @@ import {
 
 import { CarBrandEntity } from './car-brand.entity';
 import { CarModelEntity } from './car-model.entity';
+import { CurrencyEntity } from './currency.entity';
 import { TableNameEnum } from './enums/table-name.enum';
 import { BaseModel } from './models/base.model';
 import { RegionEntity } from './region.entity';
@@ -44,6 +45,30 @@ export class CarPostEntity extends BaseModel {
 
   @Column()
   price: number;
+
+  @Column()
+  currency_id: string;
+  @ManyToOne(() => CurrencyEntity, (entity) => entity.carPosts)
+  @JoinColumn({ name: 'currency_id' })
+  currency?: CurrencyEntity;
+
+  @Column('decimal')
+  priceInUSD: number;
+
+  @Column('decimal')
+  priceInUAH: number;
+
+  @Column('decimal')
+  priceInEUR: number;
+
+  @Column('decimal')
+  exchangeUSD: number;
+
+  @Column('decimal')
+  exchangeUAH: number;
+
+  @Column('decimal')
+  exchangeEUR: number;
 
   @Column('text')
   description: string;

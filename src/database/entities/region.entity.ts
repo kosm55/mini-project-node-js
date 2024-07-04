@@ -1,11 +1,13 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { CarPostEntity } from './car-post.entity';
 import { TableNameEnum } from './enums/table-name.enum';
-import { BaseModel } from './models/base.model';
 
 @Entity({ name: TableNameEnum.REGIONS })
-export class RegionEntity extends BaseModel {
+export class RegionEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
   @Column('text')
   region_name: string;
 
