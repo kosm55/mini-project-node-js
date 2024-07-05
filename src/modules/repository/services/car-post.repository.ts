@@ -50,4 +50,68 @@ export class CarPostRepository extends Repository<CarPostEntity> {
 
     return await qb.getOne();
   }
+
+  public async incrementViews(carPostId: string): Promise<void> {
+    await this.createQueryBuilder()
+      .update(CarPostEntity)
+      .set({ views: () => '"views" + 1' })
+      .where('id = :id', { id: carPostId })
+      .execute();
+  }
+
+  public async averagePriceAllRegions(
+    brandId: string,
+    modelId: string,
+  ): Promise<{
+    avgPriceInUSD: number;
+    avgPriceInUAH: number;
+    avgPriceInEUR: number;
+  }> {
+    const qb = this.createQueryBuilder('carPost')
+      .select('AVG(carPost.priceInUSD)', 'avgPriceInUSD')
+      .addSelect('AVG(carPost.priceInUAH)', 'avgPriceInUAH')
+      .addSelect('AVG(carPost.priceInEUR)', 'avgPriceInEUR')
+      .where('carPost.model_id = :modelId', { modelId })
+      .andWhere('carPost.brand_id = :brandId', { brandId });
+
+    const result = await qb.getRawOne();
+    return {
+      avgPriceInUSD:
+        result.avgPriceInUSD !== null ? parseFloat(result.avgPriceInUSD) : 0,
+      avgPriceInUAH:
+        result.avgPriceInUAH !== null ? parseFloat(result.avgPriceInUAH) : 0,
+      avgPriceInEUR:
+        result.avgPriceInEUR !== null ? parseFloat(result.avgPriceInEUR) : 0,
+    };
+  }
+
+  public async averagePriceOneRegion(
+    brandId: string,
+    modelId: string,
+    regionId: string,
+  ): Promise<{
+    avgPriceInUSD: number;
+    avgPriceInUAH: number;
+    avgPriceInEUR: number;
+  }> {
+    console.log(brandId, modelId, regionId);
+    const qb = this.createQueryBuilder('carPost')
+      .select('AVG(carPost.priceInUSD)', 'avgPriceInUSD')
+      .addSelect('AVG(carPost.priceInUAH)', 'avgPriceInUAH')
+      .addSelect('AVG(carPost.priceInEUR)', 'avgPriceInEUR')
+      .where('carPost.model_id = :modelId', { modelId })
+      .andWhere('carPost.brand_id = :brandId', { brandId })
+      .andWhere('carPost.region_id = :regionId', { regionId });
+
+    const result = await qb.getRawOne();
+    console.log(result);
+    return {
+      avgPriceInUSD:
+        result.avgPriceInUSD !== null ? parseFloat(result.avgPriceInUSD) : 0,
+      avgPriceInUAH:
+        result.avgPriceInUAH !== null ? parseFloat(result.avgPriceInUAH) : 0,
+      avgPriceInEUR:
+        result.avgPriceInEUR !== null ? parseFloat(result.avgPriceInEUR) : 0,
+    };
+  }
 }

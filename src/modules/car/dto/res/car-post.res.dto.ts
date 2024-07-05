@@ -87,5 +87,20 @@ export class CarPostResDto {
   })
   updated: Date;
 
+  @ApiProperty({
+    example: 50,
+    description: 'number of views',
+  })
+  views: number;
+
   user?: UserResDto;
+
+  // @ApiProperty({
+  //   example: [
+  //     'http://example.com/image1.jpeg',
+  //     'http://example.com/image2.jpeg',
+  //   ],
+  //   description: 'List of car photos ',
+  // })
+  // images: string;
 }

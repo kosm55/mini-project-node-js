@@ -10,12 +10,14 @@ import { CarPostEntity } from '../../../database/entities/car-post.entity';
 import { AccountTypeEnum } from '../../auth/enums/account-type.enum';
 import { IUserData } from '../../auth/interfases/user-data.interface';
 import { EmailService } from '../../email/email.service';
+import { FileStorageService } from '../../file-storage/services/file-storage.service';
 import { CarBrandRepository } from '../../repository/services/car-brand.repository';
 import { CarModelRepository } from '../../repository/services/car-model.repository';
 import { CarPostRepository } from '../../repository/services/car-post.repository';
 import { CurrencyRepository } from '../../repository/services/currency.repository';
 import { RegionRepository } from '../../repository/services/region.repository';
 import { UserRepository } from '../../repository/services/user.repository';
+import { CarPostInfoReqDto } from '../dto/req/car-post-info.req.dto';
 import { CarPostListReqDto } from '../dto/req/car-post-list.req.dto';
 import { CreateCarBrandReqDto } from '../dto/req/create-car-brand.req.dto';
 import { CreateCarModelReqDto } from '../dto/req/create-car-model.req.dto';
@@ -26,6 +28,7 @@ import { UpdateCarPotsReqDto } from '../dto/req/update-car-pots.req.dto';
 import { CarBrandResDto } from '../dto/res/car-brand.res.dto';
 import { CarModelResDto } from '../dto/res/car-model.res.dto';
 import { CarPostResDto } from '../dto/res/car-post.res.dto';
+import { CarPostInfoResDto } from '../dto/res/car-post-info.res.dto';
 import { CarPostListResDto } from '../dto/res/car-post-list.res.dto';
 import { CurrencyResDto } from '../dto/res/currency.res.dto';
 import { RegionResDto } from '../dto/res/region.res.dto';
@@ -43,6 +46,7 @@ export class CarPostService {
     private readonly exchangeService: ExchangeService,
     private readonly currencyRepository: CurrencyRepository,
     private readonly emailService: EmailService,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
   public async getList(
@@ -59,6 +63,8 @@ export class CarPostService {
   public async create(
     userData: IUserData,
     dto: CreateCarPotsReqDto,
+    //carPhotos: Express.Multer.File,
+    // carPhotos: Array<Express.Multer.File>,
   ): Promise<CarPostResDto> {
     const list = await this.ListCarPostByUserId(userData.userId);
     if (list.length > 0 && userData.accountType === AccountTypeEnum.BASE) {
@@ -107,6 +113,7 @@ export class CarPostService {
       priceInUSD = dto.price / rates.USD;
       priceInEUR = dto.price / rates.EUR;
     }
+
     const carPost = await this.carPostRepository.save(
       this.carPostRepository.create({
         ...dto,
@@ -119,6 +126,29 @@ export class CarPostService {
         priceInEUR,
       }),
     );
+
+    // const images = [];
+    // for (const item of carPhotos) {
+    //   const photo = await this.fileStorageService.uploadFile(
+    //     item,
+    //     ContentType.CAR_PHOTOS,
+    //     carPost.id,
+    //   );
+    //   images.push(photo);
+    // }
+    //
+    // carPost.images = images;
+    // await this.carPostRepository.save(carPost);
+
+    // const photo = await this.fileStorageService.uploadFile(
+    //   carPhotos,
+    //   ContentType.CAR_PHOTOS,
+    //   carPost.id,
+    // );
+
+    // carPost.images = photo;
+    // await this.carPostRepository.save(carPost);
+
     return CarPostMapper.toResponseDTO(carPost);
   }
 
@@ -133,10 +163,11 @@ export class CarPostService {
     if (!carPost) {
       throw new NotFoundException('car post  not found');
     }
-    if (carPost.user.accountType === AccountTypeEnum.PREMIUM) {
-      // тут сервіс інфо по айді посту міняю каунт на +1,  треба ще інфо зробити ентіті
-      // це будуть к-сть переглядів для преміум- createdAt- обовязково , бо там за період -тиждень рік місяць
-      // або просто додати  поле каунт і там плюсувати
+    if (
+      carPost.user.accountType === AccountTypeEnum.PREMIUM &&
+      carPost.user_id !== userData.userId
+    ) {
+      await this.carPostRepository.incrementViews(carPostId);
     }
     return CarPostMapper.toResponseDTO(carPost);
   }
@@ -181,17 +212,47 @@ export class CarPostService {
     await this.carPostRepository.remove(carPost);
   }
 
-  public async info(carPostId: string, userData: IUserData): Promise<any> {
+  public async info(
+    carPostId: string,
+    userData: IUserData,
+    query: CarPostInfoReqDto,
+  ): Promise<CarPostInfoResDto> {
     if (userData.accountType !== AccountTypeEnum.PREMIUM) {
       throw new ForbiddenException(' only PREMIUM');
     }
-    // переглдяи- беру каунт з посту- гед по айді , якщо айді не юзера-ме,  статистика з created
-    // середня ціна -  знайти всі у кого модель і марка такаж, дістати всі ціни у цьому діапахоні - це буде масив ,
-    // і проітерувати ,  для кожного sum =0 , for of sum =sum +item . count =+1
-    // і середня = сум на каунт - це для україни
-    // те саме для регіуону , даю у таблицю ще регіон і те саме рахую
 
-    return 'some info views, price';
+    await this.IsExistBrandModelRegionOrThrow(
+      query.brand_id,
+      query.model_id,
+      query.region_id,
+    );
+    const carPost = await this.carPostRepository.findOne({
+      where: { id: carPostId },
+    });
+    if (!carPost) {
+      throw new NotFoundException('post not found');
+    }
+
+    let averagePrice;
+    if (!query.region_id) {
+      averagePrice = await this.carPostRepository.averagePriceAllRegions(
+        query.brand_id,
+        query.model_id,
+      );
+    } else {
+      averagePrice = await this.carPostRepository.averagePriceOneRegion(
+        query.brand_id,
+        query.model_id,
+        query.region_id,
+      );
+    }
+    console.log(averagePrice, '1');
+    return CarPostMapper.toResponseInfoDTO(
+      carPost,
+      averagePrice.avgPriceInUSD,
+      averagePrice.avgPriceInUAH,
+      averagePrice.avgPriceInEUR,
+    );
   }
 
   public async createBrand(dto: CreateCarBrandReqDto): Promise<CarBrandResDto> {

@@ -28,10 +28,10 @@ export class AuthController {
     return await this.authService.singUp(dto);
   }
 
-  @SkipAuth()
-  // @Roles(RoleEnum.ADMIN)
-  // @UseGuards(RolesGuard)
-  // @ApiBearerAuth()
+  // @SkipAuth()
+  @Roles(RoleEnum.ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiBearerAuth()
   @Post('sign-up/admin')
   @ApiOperation({ summary: 'Sign up admin (only for admin)' })
   public async signUpAdmin(

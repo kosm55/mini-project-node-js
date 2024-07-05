@@ -11,4 +11,5 @@ export class CreateCarPotsReqDto extends PickType(BaseCarPostReqDto, [
   'region_id',
   'description',
   'isActive',
+  //'images',
 ]) {}

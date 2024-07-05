@@ -8,10 +8,14 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOperation,
@@ -19,12 +23,14 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
+import { ApiFile } from '../../common/decorators/api-file.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipAuth } from '../auth/decorators/skip-auth.decorator';
 import { RoleEnum } from '../auth/enums/role.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { IUserData } from '../auth/interfases/user-data.interface';
+import { CarPostInfoReqDto } from './dto/req/car-post-info.req.dto';
 import { CarPostListReqDto } from './dto/req/car-post-list.req.dto';
 import { CreateCarBrandReqDto } from './dto/req/create-car-brand.req.dto';
 import { CreateCarModelReqDto } from './dto/req/create-car-model.req.dto';
@@ -35,6 +41,7 @@ import { UpdateCarPotsReqDto } from './dto/req/update-car-pots.req.dto';
 import { CarBrandResDto } from './dto/res/car-brand.res.dto';
 import { CarModelResDto } from './dto/res/car-model.res.dto';
 import { CarPostResDto } from './dto/res/car-post.res.dto';
+import { CarPostInfoResDto } from './dto/res/car-post-info.res.dto';
 import { CarPostListResDto } from './dto/res/car-post-list.res.dto';
 import { CurrencyResDto } from './dto/res/currency.res.dto';
 import { RegionResDto } from './dto/res/region.res.dto';
@@ -145,6 +152,9 @@ export class CarPostController {
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  // @ApiFile('carPhotos', false)
+  // @UseInterceptors(FilesInterceptor('carPhotos'))
+  // @ApiConsumes('multipart/form-data')
   @Post()
   @ApiOperation({
     summary: 'create new car post (only for admin, manager, seller)',
@@ -152,6 +162,8 @@ export class CarPostController {
   public async create(
     @CurrentUser() userData: IUserData,
     @Body() dto: CreateCarPotsReqDto,
+    //@UploadedFile() carPhotos: Express.Multer.File,
+    // @UploadedFile() carPhotos: Array<Express.Multer.File>,
   ): Promise<CarPostResDto> {
     return await this.carPostService.create(userData, dto);
   }
@@ -218,7 +230,8 @@ export class CarPostController {
   public async info(
     @CurrentUser() userData: IUserData,
     @Param('carPostId', ParseUUIDPipe) carPostId: string,
-  ): Promise<any> {
-    return await this.carPostService.info(carPostId, userData);
+    @Query() query: CarPostInfoReqDto,
+  ): Promise<CarPostInfoResDto> {
+    return await this.carPostService.info(carPostId, userData, query);
   }
 }

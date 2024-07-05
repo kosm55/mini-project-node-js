@@ -78,4 +78,11 @@ export class CarPostEntity extends BaseModel {
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  // @Column({ type: 'text', nullable: true })
+  // //array: true,
+  // images: string;
+
+  @Column({ default: 0, nullable: true })
+  views: number;
 }

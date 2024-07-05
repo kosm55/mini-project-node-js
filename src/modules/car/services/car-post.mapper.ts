@@ -29,7 +29,9 @@ export class CarPostMapper {
       exchangeUAH: carPost.exchangeUAH,
       created: carPost.created,
       updated: carPost.update,
+      views: carPost.views,
       user: carPost.user ? UserMapper.toResponseDTO(carPost.user) : null,
+      //images: carPost.images,
     };
   }
   public static toListResponseDTO(
@@ -74,6 +76,21 @@ export class CarPostMapper {
     return {
       id: currency.id,
       currency_code: currency.currency_code,
+    };
+  }
+
+  public static toResponseInfoDTO(
+    carPost: CarPostEntity,
+    avgPriceInUSD: number,
+    avgPriceInUAH: number,
+    avgPriceInEUR: number,
+  ): any {
+    return {
+      id: carPost.id,
+      allViews: carPost.views,
+      avgPriceInUSD,
+      avgPriceInUAH,
+      avgPriceInEUR,
     };
   }
 }

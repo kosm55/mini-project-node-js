@@ -42,4 +42,13 @@ export class BaseCarPostReqDto {
 
   @IsBoolean()
   isActive: boolean;
+
+  // @ApiProperty({
+  //   type: 'array',
+  //   items: { type: 'string', format: 'binary' },
+  //   required: false,
+  // })
+  // images?: Express.Multer.File[];
+  // @IsString()
+  // images?: string;
 }
