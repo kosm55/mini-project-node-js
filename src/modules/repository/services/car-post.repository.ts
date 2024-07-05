@@ -94,7 +94,6 @@ export class CarPostRepository extends Repository<CarPostEntity> {
     avgPriceInUAH: number;
     avgPriceInEUR: number;
   }> {
-    console.log(brandId, modelId, regionId);
     const qb = this.createQueryBuilder('carPost')
       .select('AVG(carPost.priceInUSD)', 'avgPriceInUSD')
       .addSelect('AVG(carPost.priceInUAH)', 'avgPriceInUAH')
@@ -104,7 +103,6 @@ export class CarPostRepository extends Repository<CarPostEntity> {
       .andWhere('carPost.region_id = :regionId', { regionId });
 
     const result = await qb.getRawOne();
-    console.log(result);
     return {
       avgPriceInUSD:
         result.avgPriceInUSD !== null ? parseFloat(result.avgPriceInUSD) : 0,
