@@ -10,5 +10,5 @@ export class UpdateCarPotsReqDto extends PickType(BaseCarPostReqDto, [
   'currency_id',
   'region_id',
   'description',
-  'isActive',
+  //'isActive',
 ]) {}

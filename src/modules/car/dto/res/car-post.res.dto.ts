@@ -95,12 +95,12 @@ export class CarPostResDto {
 
   user?: UserResDto;
 
-  // @ApiProperty({
-  //   example: [
-  //     'http://example.com/image1.jpeg',
-  //     'http://example.com/image2.jpeg',
-  //   ],
-  //   description: 'List of car photos ',
-  // })
-  // images: string;
+  @ApiProperty({
+    example: [
+      'http://example.com/image1.jpeg',
+      'http://example.com/image2.jpeg',
+    ],
+    description: 'List of car photos ',
+  })
+  images: string[];
 }

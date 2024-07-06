@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { DataSource, Repository } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { CarPostEntity } from '../../../database/entities/car-post.entity';
 import { IUserData } from '../../auth/interfases/user-data.interface';
@@ -51,11 +53,48 @@ export class CarPostRepository extends Repository<CarPostEntity> {
     return await qb.getOne();
   }
 
+  public async changeIsActive(carPostId: string): Promise<void> {
+    await this.createQueryBuilder()
+      .update(CarPostEntity)
+      .where('id = :id', { id: carPostId })
+      .set({ isActive: true } as QueryDeepPartialEntity<CarPostEntity>)
+      .execute();
+  }
+
   public async incrementViews(carPostId: string): Promise<void> {
     await this.createQueryBuilder()
       .update(CarPostEntity)
-      .set({ views: () => '"views" + 1' })
+      .set({
+        views: () => '"views" + 1',
+        viewsOnWeek: () => '"viewsOnWeek" + 1',
+        viewsOnMonth: () => '"viewsOnMonth" + 1',
+        viewsOnYear: () => '"viewsOnYear" + 1',
+      })
       .where('id = :id', { id: carPostId })
+      .execute();
+  }
+
+  @Cron(CronExpression.EVERY_WEEK)
+  public async resetViewsOnWeek(): Promise<void> {
+    await this.createQueryBuilder()
+      .update(CarPostEntity)
+      .set({ viewsOnWeek: 0 } as QueryDeepPartialEntity<CarPostEntity>)
+      .execute();
+  }
+
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
+  public async resetViewsOnMonth(): Promise<void> {
+    await this.createQueryBuilder()
+      .update(CarPostEntity)
+      .set({ viewsOnMonth: 0 } as QueryDeepPartialEntity<CarPostEntity>)
+      .execute();
+  }
+
+  @Cron(CronExpression.EVERY_YEAR)
+  public async resetViewsOnYear(): Promise<void> {
+    await this.createQueryBuilder()
+      .update(CarPostEntity)
+      .set({ viewsOnYear: 0 } as QueryDeepPartialEntity<CarPostEntity>)
       .execute();
   }
 

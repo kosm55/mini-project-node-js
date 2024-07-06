@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -13,14 +14,15 @@ import { TransformHelper } from '../../../../common/helpers/transform.helper';
 
 export class BaseCarPostReqDto {
   @IsUUID()
-  model_id: string;
+  brand_id: string;
 
   @IsUUID()
-  brand_id: string;
+  model_id: string;
 
   @IsNumber()
   @Min(1900)
   @Max(2024)
+  @Type(() => Number)
   year: number;
 
   @IsUUID()
@@ -29,6 +31,7 @@ export class BaseCarPostReqDto {
   @IsNumber()
   @Min(0)
   @Max(3000000)
+  @Type(() => Number)
   price: number;
 
   @IsUUID()
@@ -43,12 +46,13 @@ export class BaseCarPostReqDto {
   @IsBoolean()
   isActive: boolean;
 
-  // @ApiProperty({
-  //   type: 'array',
-  //   items: { type: 'string', format: 'binary' },
-  //   required: false,
-  // })
-  // images?: Express.Multer.File[];
+  @ApiProperty({
+    type: 'array',
+    items: { type: 'string', format: 'binary' },
+    required: false,
+  })
+  carPhotos?: Express.Multer.File[];
+
   // @IsString()
   // images?: string;
 }

@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class ExchangeService {
@@ -8,8 +8,8 @@ export class ExchangeService {
 
   constructor(private httpService: HttpService) {}
 
-  @Cron('0 0 * * *')
-  async updateExchangeRates(): Promise<void> {
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  public async updateExchangeRates(): Promise<void> {
     const response = await this.httpService
       .get('https://api.privatbank.ua/p24api/pubinfo?json&exchange&coursid=5')
       .toPromise();

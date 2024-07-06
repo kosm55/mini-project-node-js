@@ -10,6 +10,7 @@ import { CarPostEntity } from '../../../database/entities/car-post.entity';
 import { AccountTypeEnum } from '../../auth/enums/account-type.enum';
 import { IUserData } from '../../auth/interfases/user-data.interface';
 import { EmailService } from '../../email/email.service';
+import { ContentType } from '../../file-storage/models/enums/content-type.enum';
 import { FileStorageService } from '../../file-storage/services/file-storage.service';
 import { CarBrandRepository } from '../../repository/services/car-brand.repository';
 import { CarModelRepository } from '../../repository/services/car-model.repository';
@@ -63,8 +64,7 @@ export class CarPostService {
   public async create(
     userData: IUserData,
     dto: CreateCarPotsReqDto,
-    //carPhotos: Express.Multer.File,
-    // carPhotos: Array<Express.Multer.File>,
+    carPhotos: Express.Multer.File[],
   ): Promise<CarPostResDto> {
     const list = await this.ListCarPostByUserId(userData.userId);
     if (list.length > 0 && userData.accountType === AccountTypeEnum.BASE) {
@@ -72,13 +72,12 @@ export class CarPostService {
         'user with BASE account can create only one post',
       );
     }
-
-    const checkBadWord = this.hasBadWord(dto.description);
-    if (checkBadWord) {
-      dto.isActive = false;
-      await this.emailService.sendEmailForManager();
-      throw new BadRequestException('bad word forbidden');
-    }
+    await this.IsExistBrandModelRegionCurrencyOrThrow(
+      dto.brand_id,
+      dto.model_id,
+      dto.region_id,
+      dto.currency_id,
+    );
 
     const usd = await this.currencyRepository.findOneBy({
       currency_code: 'USD',
@@ -127,27 +126,27 @@ export class CarPostService {
       }),
     );
 
-    // const images = [];
-    // for (const item of carPhotos) {
-    //   const photo = await this.fileStorageService.uploadFile(
-    //     item,
-    //     ContentType.CAR_PHOTOS,
-    //     carPost.id,
-    //   );
-    //   images.push(photo);
-    // }
-    //
-    // carPost.images = images;
-    // await this.carPostRepository.save(carPost);
+    const checkBadWord = this.hasBadWord(carPost.description);
+    if (checkBadWord) {
+      throw new BadRequestException(
+        'bad word forbidden, need change description',
+      );
+    } else {
+      await this.carPostRepository.changeIsActive(carPost.id);
+    }
 
-    // const photo = await this.fileStorageService.uploadFile(
-    //   carPhotos,
-    //   ContentType.CAR_PHOTOS,
-    //   carPost.id,
-    // );
+    const images = [];
+    for (const item of carPhotos) {
+      const photo = await this.fileStorageService.uploadFile(
+        item,
+        ContentType.CAR_PHOTOS,
+        carPost.id,
+      );
+      images.push(photo);
+    }
 
-    // carPost.images = photo;
-    // await this.carPostRepository.save(carPost);
+    carPost.images = images;
+    await this.carPostRepository.save(carPost);
 
     return CarPostMapper.toResponseDTO(carPost);
   }
@@ -186,18 +185,21 @@ export class CarPostService {
       userData.userId,
       carPostId,
     );
-    const checkBadWord = this.hasBadWord(dto.description);
-    if (checkBadWord) {
-      dto.isActive = false;
-      await this.emailService.sendEmailForManager();
-      throw new BadRequestException('bad word forbidden');
-    }
 
     await this.carPostRepository.save({ ...carPost, ...dto });
     const updatedCarPost = await this.carPostRepository.findCarPostById(
       userData,
       carPostId,
     );
+
+    const checkBadWord = this.hasBadWord(carPost.description);
+    if (checkBadWord) {
+      await this.emailService.sendEmailForManager();
+      throw new BadRequestException('bad word forbidden, need update post');
+    } else {
+      await this.carPostRepository.changeIsActive(carPost.id);
+    }
+
     return CarPostMapper.toResponseDTO(updatedCarPost);
   }
 
@@ -226,6 +228,7 @@ export class CarPostService {
       query.model_id,
       query.region_id,
     );
+
     const carPost = await this.carPostRepository.findOne({
       where: { id: carPostId },
     });
@@ -246,7 +249,6 @@ export class CarPostService {
         query.region_id,
       );
     }
-    console.log(averagePrice, '1');
     return CarPostMapper.toResponseInfoDTO(
       carPost,
       averagePrice.avgPriceInUSD,
@@ -370,6 +372,20 @@ export class CarPostService {
     });
     if (!region) {
       throw new BadRequestException('invalid region_id');
+    }
+  }
+  private async IsExistBrandModelRegionCurrencyOrThrow(
+    brand_id: string,
+    model_id: string,
+    region_id: string,
+    currency_id: string,
+  ): Promise<void> {
+    await this.IsExistBrandModelRegionOrThrow(brand_id, model_id, region_id);
+    const currency = await this.currencyRepository.findOne({
+      where: { id: currency_id },
+    });
+    if (!currency) {
+      throw new BadRequestException('invalid currency_id');
     }
   }
   private hasBadWord(description: string): boolean {

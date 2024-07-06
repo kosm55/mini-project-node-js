@@ -9,6 +9,7 @@ import {
   Put,
   Query,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -152,9 +153,9 @@ export class CarPostController {
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  // @ApiFile('carPhotos', false)
-  // @UseInterceptors(FilesInterceptor('carPhotos'))
-  // @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data')
+  @ApiFile('carPhotos')
+  @UseInterceptors(FilesInterceptor('carPhotos'))
   @Post()
   @ApiOperation({
     summary: 'create new car post (only for admin, manager, seller)',
@@ -162,10 +163,9 @@ export class CarPostController {
   public async create(
     @CurrentUser() userData: IUserData,
     @Body() dto: CreateCarPotsReqDto,
-    //@UploadedFile() carPhotos: Express.Multer.File,
-    // @UploadedFile() carPhotos: Array<Express.Multer.File>,
+    @UploadedFiles() carPhotos: Express.Multer.File[],
   ): Promise<CarPostResDto> {
-    return await this.carPostService.create(userData, dto);
+    return await this.carPostService.create(userData, dto, carPhotos);
   }
 
   @ApiBearerAuth()

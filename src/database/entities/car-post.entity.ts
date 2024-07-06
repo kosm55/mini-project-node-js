@@ -76,13 +76,21 @@ export class CarPostEntity extends BaseModel {
   @UpdateDateColumn()
   update: Date;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: false })
   isActive: boolean;
 
-  // @Column({ type: 'text', nullable: true })
-  // //array: true,
-  // images: string;
+  @Column({ type: 'text', array: true, nullable: true })
+  images: string[];
 
   @Column({ default: 0, nullable: true })
   views: number;
+
+  @Column({ default: 0, nullable: true })
+  viewsOnWeek: number;
+
+  @Column({ default: 0, nullable: true })
+  viewsOnMonth: number;
+
+  @Column({ default: 0, nullable: true })
+  viewsOnYear: number;
 }

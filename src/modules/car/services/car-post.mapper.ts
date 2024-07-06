@@ -1,3 +1,5 @@
+import * as process from 'process';
+
 import { CarBrandEntity } from '../../../database/entities/car-brand.entity';
 import { CarModelEntity } from '../../../database/entities/car-model.entity';
 import { CarPostEntity } from '../../../database/entities/car-post.entity';
@@ -30,8 +32,8 @@ export class CarPostMapper {
       created: carPost.created,
       updated: carPost.update,
       views: carPost.views,
+      images: carPost.images ? carPost.images : null,
       user: carPost.user ? UserMapper.toResponseDTO(carPost.user) : null,
-      //images: carPost.images,
     };
   }
   public static toListResponseDTO(
@@ -88,6 +90,9 @@ export class CarPostMapper {
     return {
       id: carPost.id,
       allViews: carPost.views,
+      viewsOnWeek: carPost.viewsOnWeek,
+      viewsOnMonth: carPost.viewsOnMonth,
+      viewsOnYear: carPost.viewsOnYear,
       avgPriceInUSD,
       avgPriceInUAH,
       avgPriceInEUR,
