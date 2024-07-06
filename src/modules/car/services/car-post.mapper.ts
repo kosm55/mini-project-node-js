@@ -1,5 +1,3 @@
-import * as process from 'process';
-
 import { CarBrandEntity } from '../../../database/entities/car-brand.entity';
 import { CarModelEntity } from '../../../database/entities/car-model.entity';
 import { CarPostEntity } from '../../../database/entities/car-post.entity';
