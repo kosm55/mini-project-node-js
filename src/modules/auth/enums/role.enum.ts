@@ -4,7 +4,7 @@ export enum RoleEnum {
   CUSTOMER = 'customer',
   SELLER = 'seller',
   AUTOCENTRE_ADMIN = 'autocenter_admin',
-  AUTOCENTRE_MANAGER = 'autocentre_maanger',
+  AUTOCENTRE_MANAGER = 'autocentre_manager',
   SALES = 'sales',
   MECHANIC = 'mechanic',
 }
