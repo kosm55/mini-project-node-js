@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -37,7 +38,7 @@ export class RolesGuard implements CanActivate {
       id: user.userId,
     });
     if (!userData) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const userRole = userData.role as RoleEnum;

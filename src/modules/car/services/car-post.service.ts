@@ -8,6 +8,7 @@ import {
 
 import { CarPostEntity } from '../../../database/entities/car-post.entity';
 import { AccountTypeEnum } from '../../auth/enums/account-type.enum';
+import { RoleEnum } from '../../auth/enums/role.enum';
 import { IUserData } from '../../auth/interfases/user-data.interface';
 import { EmailService } from '../../email/email.service';
 import { ContentType } from '../../file-storage/models/enums/content-type.enum';
@@ -18,7 +19,7 @@ import { CarPostRepository } from '../../repository/services/car-post.repository
 import { CurrencyRepository } from '../../repository/services/currency.repository';
 import { RegionRepository } from '../../repository/services/region.repository';
 import { UserRepository } from '../../repository/services/user.repository';
-import { CarPostInfoReqDto } from '../dto/req/car-post-info.req.dto';
+import { AddBrandModelReqDto } from '../dto/req/add-brand-model.req.dto';
 import { CarPostListReqDto } from '../dto/req/car-post-list.req.dto';
 import { CreateCarBrandReqDto } from '../dto/req/create-car-brand.req.dto';
 import { CreateCarModelReqDto } from '../dto/req/create-car-model.req.dto';
@@ -181,10 +182,15 @@ export class CarPostService {
       dto.model_id,
       dto.region_id,
     );
-    const carPost = await this.findMyCarPostByIdOrThrow(
-      userData.userId,
-      carPostId,
-    );
+    let carPost;
+    if (
+      userData.role === RoleEnum.MANAGER ||
+      userData.role === RoleEnum.ADMIN
+    ) {
+      carPost = await this.findCarPostByIdOrThrow(carPostId);
+    } else {
+      carPost = await this.findMyCarPostByIdOrThrow(userData.userId, carPostId);
+    }
 
     await this.carPostRepository.save({ ...carPost, ...dto });
     const updatedCarPost = await this.carPostRepository.findCarPostById(
@@ -207,27 +213,26 @@ export class CarPostService {
     userData: IUserData,
     carPostId: string,
   ): Promise<void> {
-    const carPost = await this.findMyCarPostByIdOrThrow(
-      userData.userId,
-      carPostId,
-    );
+    let carPost;
+    if (
+      userData.role === RoleEnum.MANAGER ||
+      userData.role === RoleEnum.ADMIN
+    ) {
+      carPost = await this.findCarPostByIdOrThrow(carPostId);
+    } else {
+      carPost = await this.findMyCarPostByIdOrThrow(userData.userId, carPostId);
+    }
+
     await this.carPostRepository.remove(carPost);
   }
 
   public async info(
     carPostId: string,
     userData: IUserData,
-    query: CarPostInfoReqDto,
   ): Promise<CarPostInfoResDto> {
     if (userData.accountType !== AccountTypeEnum.PREMIUM) {
-      throw new ForbiddenException(' only PREMIUM');
+      throw new BadRequestException(' only PREMIUM');
     }
-
-    await this.IsExistBrandModelRegionOrThrow(
-      query.brand_id,
-      query.model_id,
-      query.region_id,
-    );
 
     const carPost = await this.carPostRepository.findOne({
       where: { id: carPostId },
@@ -236,24 +241,25 @@ export class CarPostService {
       throw new NotFoundException('post not found');
     }
 
-    let averagePrice;
-    if (!query.region_id) {
-      averagePrice = await this.carPostRepository.averagePriceAllRegions(
-        query.brand_id,
-        query.model_id,
+    const averagePrice = await this.carPostRepository.averagePriceAllRegions(
+      carPost.brand_id,
+      carPost.model_id,
+    );
+
+    const averagePriceRegion =
+      await this.carPostRepository.averagePriceOneRegion(
+        carPost.brand_id,
+        carPost.model_id,
+        carPost.region_id,
       );
-    } else {
-      averagePrice = await this.carPostRepository.averagePriceOneRegion(
-        query.brand_id,
-        query.model_id,
-        query.region_id,
-      );
-    }
     return CarPostMapper.toResponseInfoDTO(
       carPost,
       averagePrice.avgPriceInUSD,
       averagePrice.avgPriceInUAH,
       averagePrice.avgPriceInEUR,
+      averagePriceRegion.avgPriceInUSD,
+      averagePriceRegion.avgPriceInUAH,
+      averagePriceRegion.avgPriceInEUR,
     );
   }
 
@@ -287,6 +293,10 @@ export class CarPostService {
 
   public async getAllModel(): Promise<CarModelResDto[]> {
     return await this.carModelRepository.find();
+  }
+
+  public async sendEmailForManager(dto: AddBrandModelReqDto): Promise<string> {
+    return `${dto.brand_name} ${dto.brand_name} - sent to the manager`;
   }
 
   public async createRegion(dto: CreateRegionReqDto): Promise<RegionResDto> {

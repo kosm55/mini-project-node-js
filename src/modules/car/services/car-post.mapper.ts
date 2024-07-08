@@ -84,6 +84,9 @@ export class CarPostMapper {
     avgPriceInUSD: number,
     avgPriceInUAH: number,
     avgPriceInEUR: number,
+    avgPriceRegionInUSD: number,
+    avgPriceRegionInUAH: number,
+    avgPriceRegionInEUR: number,
   ): any {
     return {
       id: carPost.id,
@@ -94,6 +97,9 @@ export class CarPostMapper {
       avgPriceInUSD,
       avgPriceInUAH,
       avgPriceInEUR,
+      avgPriceRegionInUSD,
+      avgPriceRegionInUAH,
+      avgPriceRegionInEUR,
     };
   }
 }

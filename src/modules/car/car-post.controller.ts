@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
@@ -30,7 +32,7 @@ import { SkipAuth } from '../auth/decorators/skip-auth.decorator';
 import { RoleEnum } from '../auth/enums/role.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { IUserData } from '../auth/interfases/user-data.interface';
-import { CarPostInfoReqDto } from './dto/req/car-post-info.req.dto';
+import { AddBrandModelReqDto } from './dto/req/add-brand-model.req.dto';
 import { CarPostListReqDto } from './dto/req/car-post-list.req.dto';
 import { CreateCarBrandReqDto } from './dto/req/create-car-brand.req.dto';
 import { CreateCarModelReqDto } from './dto/req/create-car-model.req.dto';
@@ -92,6 +94,18 @@ export class CarPostController {
     @Body() dto: CreateCarModelReqDto,
   ): Promise<CarModelResDto> {
     return await this.carPostService.createModel(dto);
+  }
+
+  @ApiBearerAuth()
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @Post('add-brand-or-model')
+  @ApiOperation({ summary: 'add new model (only for admin, manager)' })
+  public async sendEmailForManager(
+    @Body() dto: AddBrandModelReqDto,
+  ): Promise<string> {
+    return await this.carPostService.sendEmailForManager(dto);
   }
 
   @SkipAuth()
@@ -204,7 +218,7 @@ export class CarPostController {
   @ApiForbiddenResponse({ description: 'Forbidden' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   @ApiNotFoundResponse({ description: 'Not Found' })
-  //@HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':carPostId')
   @ApiOperation({
     summary: 'delete car pots (only for admin, manager, seller)',
@@ -229,8 +243,7 @@ export class CarPostController {
   public async info(
     @CurrentUser() userData: IUserData,
     @Param('carPostId', ParseUUIDPipe) carPostId: string,
-    @Query() query: CarPostInfoReqDto,
   ): Promise<CarPostInfoResDto> {
-    return await this.carPostService.info(carPostId, userData, query);
+    return await this.carPostService.info(carPostId, userData);
   }
 }

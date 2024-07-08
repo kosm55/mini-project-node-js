@@ -3,6 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import { IsOptional, IsString, Length, Matches } from 'class-validator';
 
 import { TransformHelper } from '../../../../common/helpers/transform.helper';
+import { regexConstant } from '../../../../constants/regex.constant';
 
 export class BaseUserReqDto {
   @IsOptional()
@@ -21,10 +22,8 @@ export class BaseUserReqDto {
   @Length(0, 300)
   bio?: string;
 
-  //
-  //регулярку винести в константи !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  @Matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
+  // /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+  @Matches(regexConstant.EMAIL, {
     message: 'invalid email',
   })
   @IsString()
@@ -36,8 +35,9 @@ export class BaseUserReqDto {
   })
   email: string;
 
+  //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
   @IsString()
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, {
+  @Matches(regexConstant.PASSWORD, {
     message:
       'invalid password, min 8 characters, min: 1 uppercase letter, 1 lowercase letter, 1 digit',
   })

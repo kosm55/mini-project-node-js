@@ -52,7 +52,4 @@ export class BaseCarPostReqDto {
     required: false,
   })
   carPhotos?: Express.Multer.File[];
-
-  // @IsString()
-  // images?: string;
 }

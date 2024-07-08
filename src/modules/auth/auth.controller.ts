@@ -6,8 +6,6 @@ import { Roles } from './decorators/roles.decorator';
 import { SkipAuth } from './decorators/skip-auth.decorator';
 import { SignInReqDto } from './dto/req/sign-in.req.dto';
 import { SignUpReqDto } from './dto/req/sign-up.req.dto';
-import { SignUpAdminReqDto } from './dto/req/sign-up-admin.req.dto';
-import { SignUpManagerReqDto } from './dto/req/sign-up-manager.req.dto';
 import { AuthResDto } from './dto/res/auth.res.dto';
 import { TokenPairResDto } from './dto/res/token-pair.res.dto';
 import { RoleEnum } from './enums/role.enum';
@@ -22,10 +20,17 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @SkipAuth()
-  @Post('sign-up')
-  @ApiOperation({ summary: 'Sign up user' })
-  public async signUp(@Body() dto: SignUpReqDto): Promise<AuthResDto> {
-    return await this.authService.singUp(dto);
+  @Post('sign-up/customer')
+  @ApiOperation({ summary: 'Sign up user-customer' })
+  public async signUpCustomer(@Body() dto: SignUpReqDto): Promise<AuthResDto> {
+    return await this.authService.singUp(dto, RoleEnum.CUSTOMER);
+  }
+
+  @SkipAuth()
+  @Post('sign-up/seller')
+  @ApiOperation({ summary: 'Sign up user-seller' })
+  public async signUpSeller(@Body() dto: SignUpReqDto): Promise<AuthResDto> {
+    return await this.authService.singUp(dto, RoleEnum.SELLER);
   }
 
   // @SkipAuth()
@@ -34,10 +39,8 @@ export class AuthController {
   @ApiBearerAuth()
   @Post('sign-up/admin')
   @ApiOperation({ summary: 'Sign up admin (only for admin)' })
-  public async signUpAdmin(
-    @Body() dto: SignUpAdminReqDto,
-  ): Promise<AuthResDto> {
-    return await this.authService.signUpAdmin(dto);
+  public async signUpAdmin(@Body() dto: SignUpReqDto): Promise<AuthResDto> {
+    return await this.authService.singUp(dto, RoleEnum.ADMIN);
   }
 
   @Roles(RoleEnum.ADMIN)
@@ -45,10 +48,8 @@ export class AuthController {
   @ApiBearerAuth()
   @Post('sign-up/manager')
   @ApiOperation({ summary: 'Sign up manager (only for admin)' })
-  public async signUpManager(
-    @Body() dto: SignUpManagerReqDto,
-  ): Promise<AuthResDto> {
-    return await this.authService.signUpManager(dto);
+  public async signUpManager(@Body() dto: SignUpReqDto): Promise<AuthResDto> {
+    return await this.authService.singUp(dto, RoleEnum.MANAGER);
   }
 
   @SkipAuth()

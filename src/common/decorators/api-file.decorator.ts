@@ -1,35 +1,3 @@
-//
-// import { applyDecorators } from '@nestjs/common';
-// import { ApiBody } from '@nestjs/swagger';
-//
-// export const ApiFile = (
-//   fileName: string,
-//   isArray = true,
-//   isRequired = true,
-// ): MethodDecorator => {
-//   return applyDecorators(
-//     ApiBody({
-//       schema: {
-//         type: 'object',
-//         required: isRequired ? [fileName] : [],
-//         properties: {
-//           [fileName]: isArray
-//             ? {
-//                 type: 'array',
-//                 items: {
-//                   type: 'string',
-//                   format: 'binary',
-//                 },
-//               }
-//             : {
-//                 type: 'string',
-//                 format: 'binary',
-//               },
-//         },
-//       },
-//     }),
-//   );
-// };
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody } from '@nestjs/swagger';
 
@@ -56,7 +24,6 @@ export const ApiFile = (
       schema: {
         type: 'object',
         required: requiredFields,
-        //required: isRequired ? [fileName] : [],
         properties: {
           model_id: { type: 'string', format: 'uuid' },
           brand_id: { type: 'string', format: 'uuid' },
